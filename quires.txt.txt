@@ -1,0 +1,370 @@
+-- create
+CREATE TABLE EMPLOYEE (
+  empId NUMBER PRIMARY KEY,
+  name VARCHAR2(15) NOT NULL,
+  emp_dept_id NUMBER 
+);
+Create TABLE departments 
+(
+dept_id NUMBER PRIMARY KEY,
+dept_name VARCHAR2(50)
+);
+
+-- insert
+
+INSERT INTO departments VALUES (1, 'Sales');
+INSERT INTO departments VALUES (2, 'Accounting');
+INSERT INTO departments VALUES (3, 'IT');
+INSERT INTO departments VALUES (4, 'HR');
+
+INSERT INTO employee VALUES (1, 'Ali',   1);
+INSERT INTO employee VALUES (2, 'Sanaa', 1);
+INSERT INTO employee VALUES (3, 'Zaid',  2);
+INSERT INTO employee VALUES (4, 'Omar',  3);
+INSERT INTO employee VALUES (5, 'Lina',  3);
+INSERT INTO employee VALUES (6, 'Khaled',3);
+INSERT INTO employee VALUES (7, 'Sara',  4);
+
+ALTER TABLE EMPLOYEE ADD CONSTRAINT fk_employee_department
+Foreign KEY (emp_dept_id) 
+REFERENCES departments(dept_id);
+
+-- fetch 
+-- SELECT * FROM EMPLOYEE ;
+-- SELECT * FROM departments ;
+
+-- SELECT d.dept_name ,COUNT(e.empId) AS employee_count 
+-- FROM EMPLOYEE e 
+-- JOIN departments d
+-- ON e.emp_dept_id = d.dept_id
+-- GROUP BY d.dept_name;
+
+--SELECT *from EMPLOYEE order by name;
+
+--1
+/*
+SELECT e.name , d.dept_name 
+FROM EMPLOYEE e JOIN departments d
+ON d.dept_id = e.emp_dept_id;
+*/
+2
+--without JOIN
+/*
+SELECT name from employee where  emp_dept_id= 3;
+*/
+
+-- supose that we dont know the id of it department so letsdoit  with join
+-- SELECT e.name 
+-- FROM employee e JOIN departments d
+-- ON d.dept_id = e.emp_dept_id
+-- where d.dept_name LIKE 'IT'; 
+
+--3
+-- SELECT e.name , d.dept_name 
+-- FROM 
+-- employee e JOIN departments d
+-- ON 
+-- d.dept_id = e.emp_dept_id
+-- ORDER BY d.dept_name desc;
+
+-- SELECT d.dept_name , COUNT(e.emp_dept_id)
+-- FROM departments d JOIN EMPLOYEE e
+-- ON d.dept_id = e.emp_dept_id
+-- GROUP by d.dept_name;
+-- SELECT  emp_dept_id FROM employee;
+-- SELECT AVG( DISTINCT emp_dept_id)
+-- FROM employee;
+
+
+
+-- SELECT d.dept_name , COUNT(*)
+-- FROM departments d join employee e 
+-- ON d.dept_id = e.emp_dept_id
+-- GROUP by dept_name
+-- HAVING COUNT(*)>1;
+-- ORDER BY COUNT(*) DESC;
+
+INSERT INTO departments VALUES (5, 'Marketing');
+
+-- SELECT d.dept_name , COUNT(emp_dept_id)
+-- FROM departments d LEFT JOIN employee e
+-- ON e.emp_dept_id=d.dept_id
+-- GROUP BY d.dept_name
+-- HAVING COUNT(emp_dept_id)=0;
+
+-- SELECT d.dept_name
+-- FROM departments d JOIN employee e
+-- ON e.emp_dept_id=d.dept_id
+-- GROUP BY d.dept_name;
+
+-- SELECT d.dept_name , COUNT(emp_dept_id)
+-- FROM departments d LEFT JOIN employee e
+-- ON e.emp_dept_id=d.dept_id
+-- GROUP BY d.dept_name;
+
+
+SELECT * 
+from employee
+where emp_dept_id IS NULL;
+
+
+---------------------chat gpt session
+
+I am learning Oracle SQL/Oracle Database from zero to advanced level, practically and step by step.
+
+Teach me like a hands-on mentor. Do NOT just give me explanations — make me write SQL, test my understanding, and correct my mistakes. Introduce concepts progressively and don't jump ahead before I understand the current topic.
+
+What I already know
+
+I have learned:
+
+Basic Oracle concepts: database, user/schema, tables
+
+CREATE TABLE
+
+INSERT
+
+SELECT
+
+Oracle data types such as NUMBER and VARCHAR2
+
+PRIMARY KEY
+
+FOREIGN KEY
+
+NOT NULL
+
+Inline and table-level foreign keys
+
+Table aliases
+
+INNER JOIN / JOIN
+
+LEFT JOIN
+
+ON
+
+WHERE
+
+LIKE
+
+IN
+
+Comparison operators
+
+GROUP BY
+
+Aggregate functions:
+
+COUNT
+
+SUM
+
+AVG
+
+MIN
+
+MAX
+
+COUNT(*) vs COUNT(column)
+
+DISTINCT inside aggregate functions
+
+HAVING
+
+ORDER BY
+
+Multiple-column ORDER BY
+
+Basic understanding of NULL
+
+IS NULL
+
+IS NOT NULL
+
+How LEFT JOIN creates NULLs for unmatched rows
+
+Why COUNT(column) can return 0 with a LEFT JOIN
+
+The logical SQL flow:
+
+FROM
+→ JOIN / ON
+→ WHERE
+→ GROUP BY
+→ aggregate functions
+→ HAVING
+→ SELECT
+→ ORDER BY
+
+My current tables
+
+Use these tables for practical exercises unless there is a reason to introduce new ones:
+
+CREATE TABLE EMPLOYEE (
+  empId NUMBER PRIMARY KEY,
+  name VARCHAR2(15) NOT NULL,
+  emp_dept_id NUMBER
+);
+
+CREATE TABLE departments (
+  dept_id NUMBER PRIMARY KEY,
+  dept_name VARCHAR2(50)
+);
+
+
+Current example data:
+
+INSERT INTO departments VALUES (1, 'Sales');
+INSERT INTO departments VALUES (2, 'Accounting');
+INSERT INTO departments VALUES (3, 'IT');
+INSERT INTO departments VALUES (4, 'HR');
+INSERT INTO departments VALUES (5, 'Marketing');
+
+INSERT INTO employee VALUES (1, 'Ali', 1);
+INSERT INTO employee VALUES (2, 'Sanaa', 1);
+INSERT INTO employee VALUES (3, 'Zaid', 2);
+INSERT INTO employee VALUES (4, 'Omar', 3);
+INSERT INTO employee VALUES (5, 'Lina', 3);
+INSERT INTO employee VALUES (6, 'Khaled', 3);
+INSERT INTO employee VALUES (7, 'Sara', 4);
+
+
+Note: the foreign key constraint may or may not currently exist depending on my Oracle session. Don't assume it exists unless I show it.
+
+My learning style
+
+Explain the concept simply first.
+
+Then show a small example.
+
+Explain the logical flow of the query.
+
+Then give me an exercise.
+
+Let me write the query myself.
+
+Check my answer.
+
+If I'm wrong, explain exactly why and let me try again when appropriate.
+
+Don't immediately give me the answer if I'm capable of solving it.
+
+Point out small improvements separately from actual errors.
+
+Distinguish between "wrong" and "valid but different from what was asked."
+
+Use my existing tables and data whenever possible.
+
+Increase difficulty gradually.
+
+Occasionally give me combined challenges to verify that I really understand the concepts.
+
+Don't overwhelm me with advanced concepts before I'm ready.
+
+Important concepts I want to understand deeply
+
+I don't want to memorize SQL syntax. I want to understand what Oracle is logically doing.
+
+For example, when explaining:
+
+SELECT d.dept_name, COUNT(e.emp_dept_id)
+FROM departments d
+LEFT JOIN employee e
+    ON d.dept_id = e.emp_dept_id
+GROUP BY d.dept_name;
+
+
+explain the conceptual flow:
+
+FROM
+→ JOIN
+→ resulting rows
+→ GROUP BY
+→ groups
+→ aggregate calculation
+→ SELECT
+
+Also explain why:
+
+COUNT(*)
+
+
+and:
+
+COUNT(column)
+
+
+can behave differently with LEFT JOIN and NULL.
+
+Where I currently stopped
+
+I am currently learning NULL.
+
+I already understand:
+
+WHERE emp_dept_id IS NULL;
+
+
+and that:
+
+WHERE emp_dept_id = NULL
+
+
+does not work.
+
+I was about to continue learning the rest of NULL behavior, especially:
+
+IS NULL
+
+IS NOT NULL
+
+NULL in comparisons
+
+NULL in expressions
+
+COUNT(column) vs COUNT(*)
+
+Oracle's empty-string behavior
+
+NVL()
+
+COALESCE()
+
+After finishing NULL properly, continue with:
+
+CASE
+
+More advanced JOINs
+
+Subqueries
+
+Correlated subqueries
+
+Set operators
+
+Views
+
+Indexes
+
+Sequences / identity columns
+
+Transactions (COMMIT, ROLLBACK, SAVEPOINT)
+
+Oracle-specific functions
+
+PL/SQL
+
+Procedures
+
+Functions
+
+Triggers
+
+Packages
+
+More advanced Oracle/database architecture
+
+Eventually I want to be able to design and build a realistic Oracle database from scratch and write professional SQL and PL/SQL.
+
+Start from my current point — continue with NULL, don't restart the course.
