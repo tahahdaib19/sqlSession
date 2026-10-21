@@ -74,4 +74,114 @@ BEGIN
 END;
 
 
-SELECT *FROM EMPLOYEE;
+dynamic sql
+
+
+
+
+
+
+CREATE OR REPLACE PROCEDURE copy_table (
+    p_source_table IN VARCHAR2
+)
+AUTHID CURRENT_USER
+AS
+    v_sql VARCHAR2(4000);
+BEGIN
+    v_sql :=
+        'CREATE TABLE ' ||
+        DBMS_ASSERT.SIMPLE_SQL_NAME(p_source_table||'_Backup') ||
+        ' AS SELECT * FROM ' ||
+        DBMS_ASSERT.SQL_OBJECT_NAME(p_source_table);
+
+    EXECUTE IMMEDIATE v_sql;
+END;
+/
+
+DROP TABLE EMPLOYEES_BACKUP;
+
+BEGIN
+    copy_table();
+END;
+
+
+CREATE OR REPLACE PROCEDURE backup_all_tables
+AUTHID CURRENT_USER
+AS
+BEGIN
+    FOR t IN (
+        SELECT table_name
+        FROM user_tables
+        WHERE NOT REGEXP_LIKE(table_name, '_BACKUP$')
+          AND LENGTH(table_name) <= 121
+          AND NOT EXISTS (
+              SELECT 1
+              FROM user_tables b
+              WHERE b.table_name = user_tables.table_name || '_BACKUP'
+          )
+        ORDER BY table_name
+    )
+    LOOP
+        BEGIN
+            copy_table(t.table_name);
+
+            DBMS_OUTPUT.PUT_LINE(
+                'SUCCESS: ' || t.table_name || '_BACKUP'
+            );
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE(
+                    'FAILED: ' || t.table_name || ' - ' || SQLERRM
+                );
+        END;
+    END LOOP;
+END;
+/
+
+
+
+CREATE OR REPLACE PROCEDURE delete_all_backups
+AUTHID CURRENT_USER
+AS
+BEGIN
+    FOR t IN (
+        SELECT table_name
+        FROM user_tables
+        WHERE REGEXP_LIKE(table_name, '_BACKUP$')
+        ORDER BY table_name
+    )
+    LOOP
+        BEGIN
+            EXECUTE IMMEDIATE
+                'DROP TABLE "' ||
+                REPLACE(t.table_name, '"', '""') ||
+                '"';
+
+            DBMS_OUTPUT.PUT_LINE(
+                'DELETED: ' || t.table_name
+            );
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE(
+                    'FAILED: ' || t.table_name ||
+                    ' - ' || SQLERRM
+                );
+        END;
+    END LOOP;
+END;
+/
+
+
+BEGIN
+--DELETE_ALL_BACKUPS();
+backup_all_tables();
+END;
+
+SELECT * FROM DEPARTMENT_BACKUP;
+
+
+
+
+
