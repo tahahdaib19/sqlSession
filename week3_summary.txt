@@ -1,0 +1,128 @@
+--     FOR i IN 1 .. v_ids.COUNT LOOP
+--         UPDATE EMPLOYEE
+--         SET SALARY = SALARY + 100
+--         WHERE EMP_ID = v_ids(i);
+--         v_total_rows := v_total_rows + SQL%ROWCOUNT;
+--     END LOOP;
+--     DBMS_OUTPUT.PUT_LINE('Total rows affected: ' || v_total_rows);
+--     COMMIT;
+-- END;
+-- /
+
+-- (B) FORALL: يستخدم Bulk Binding لتنفيذ مجموعة DML بكفاءة أعلى.
+-- SQL%ROWCOUNT بعد FORALL يعطي إجمالي الصفوف المتأثرة في الدفعة.
+-- DECLARE
+--     TYPE emp_ids_type IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+--     v_ids emp_ids_type;
+-- BEGIN
+--     v_ids(1) := 1;
+--     v_ids(2) := 2;
+--     v_ids(3) := 5;
+--     FORALL i IN 1 .. v_ids.COUNT
+--         UPDATE EMPLOYEE
+--         SET SALARY = SALARY + 100
+--         WHERE EMP_ID = v_ids(i);
+--     DBMS_OUTPUT.PUT_LINE('Total rows affected: ' || SQL%ROWCOUNT);
+--     COMMIT;
+-- END;
+-- /
+
+-- ============================================================
+-- 12) DYNAMIC SQL: BACKUP TABLES
+-- ============================================================
+-- EXECUTE IMMEDIATE ينفّذ SQL مبنياً أثناء تشغيل البرنامج.
+-- AUTHID CURRENT_USER: يفحص الصلاحيات حسب المستخدم المستدعي.
+-- DBMS_ASSERT يتحقق من صحة اسم الجدول قبل إدخاله في النص الديناميكي.
+-- CREATE TABLE AS SELECT ينسخ الأعمدة والبيانات، لكنه لا ينسخ جميع
+-- القيود والفهارس والمشغلات والصلاحيات الخاصة بالجدول الأصلي.
+CREATE OR REPLACE PROCEDURE copy_table (
+    p_source_table IN VARCHAR2
+)
+AUTHID CURRENT_USER
+AS
+    v_source VARCHAR2(261);
+    v_backup VARCHAR2(128);
+    v_sql VARCHAR2(4000);
+BEGIN
+    -- هنا نتعامل مع أسماء جداول عادية (غير مقتبسة) داخل المخطط الحالي.
+    v_source := UPPER(DBMS_ASSERT.SIMPLE_SQL_NAME(p_source_table));
+    v_backup := DBMS_ASSERT.SIMPLE_SQL_NAME(v_source || '_BACKUP');
+
+    -- التأكد أن الجدول المصدر موجود وقابل للإشارة إليه.
+    v_source := DBMS_ASSERT.SQL_OBJECT_NAME(v_source);
+
+    v_sql := 'CREATE TABLE ' || v_backup ||
+             ' AS SELECT * FROM ' || v_source;
+    EXECUTE IMMEDIATE v_sql;
+END copy_table;
+/
+
+-- مثال: يجب تمرير اسم الجدول؛ copy_table() دون وسيط لا تعمل.
+-- BEGIN
+--     copy_table('EMPLOYEE');
+-- END;
+-- /
+-- DROP TABLE EMPLOYEE_BACKUP; -- يحذف النسخة الاحتياطية نهائياً؛ للتجربة فقط.
+
+-- إنشاء نسخة احتياطية لكل جدول عادي لا ينتهي اسمه بـ _BACKUP.
+-- نستبعد الجداول التي لها نسخة موجودة بالفعل.
+CREATE OR REPLACE PROCEDURE backup_all_tables
+AUTHID CURRENT_USER
+AS
+BEGIN
+    FOR t IN (
+        SELECT src.table_name
+        FROM user_tables src
+        WHERE NOT REGEXP_LIKE(src.table_name, '_BACKUP$')
+          AND LENGTH(src.table_name) <= 121
+          AND NOT EXISTS (
+              SELECT 1
+              FROM user_tables b
+              WHERE b.table_name = src.table_name || '_BACKUP'
+          )
+        ORDER BY src.table_name
+    ) LOOP
+        BEGIN
+            copy_table(t.table_name);
+            DBMS_OUTPUT.PUT_LINE('SUCCESS: ' || t.table_name || '_BACKUP');
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- خطأ جدول واحد لا يوقف محاولة نسخ باقي الجداول.
+                DBMS_OUTPUT.PUT_LINE('FAILED: ' || t.table_name || ' - ' || SQLERRM);
+        END;
+    END LOOP;
+END backup_all_tables;
+/
+
+-- حذف كل الجداول التي تنتهي بـ _BACKUP في المخطط الحالي.
+-- تحذير: DROP TABLE عملية DDL تتضمن COMMIT ضمنياً، وقد تؤدي لفقد البيانات.
+CREATE OR REPLACE PROCEDURE delete_all_backups
+AUTHID CURRENT_USER
+AS
+BEGIN
+    FOR t IN (
+        SELECT table_name
+        FROM user_tables
+        WHERE REGEXP_LIKE(table_name, '_BACKUP$')
+        ORDER BY table_name
+    ) LOOP
+        BEGIN
+            -- نهرب علامات الاقتباس في اسم الجدول قبل بناء الأمر.
+            EXECUTE IMMEDIATE
+                'DROP TABLE "' || REPLACE(t.table_name, '"', '""') || '"';
+            DBMS_OUTPUT.PUT_LINE('DELETED: ' || t.table_name);
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE('FAILED: ' || t.table_name || ' - ' || SQLERRM);
+        END;
+    END LOOP;
+END delete_all_backups;
+/
+
+-- ============================================================
+-- 13) DYNAMIC SQL: OPTIONAL TESTS
+-- ============================================================
+-- شغّل أوامر النسخ والحذف يدوياً فقط عند الحاجة.
+-- BEGIN
+--     backup_all_tables();
+--     -- delete_all_backups(); -- احذر: يحذف كل جداول _BACKUP.
