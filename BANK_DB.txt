@@ -1,0 +1,92 @@
+BANK_DB
+
+
+SQL> DESCRIBE EMPLOYEE
+
+
+Name            Null?    Type         
+--------------- -------- ------------ 
+EMP_ID          NOT NULL NUMBER(38)   
+EMP_NAME                 VARCHAR2(20) 
+EMP_AGE                  NUMBER(38)   
+EMP_DEPT_ID              NUMBER(38)   
+MANAGER_ID               NUMBER       
+SALARY                   NUMBER       
+CREATED_AT               DATE         
+BANK_ACCOUNT_ID          NUMBER       
+
+
+
+SQL> DESCRIBE DEPARTMENT
+
+
+Name      Null?    Type         
+--------- -------- ------------ 
+DEPT_ID   NOT NULL NUMBER(38)   
+DEPT_NAME          VARCHAR2(30
+
+
+
+
+
+
+Name        Null?    Type         
+----------- -------- ------------ 
+ACCOUNT_ID  NOT NULL NUMBER       
+EMPLOYEE_ID NOT NULL NUMBER       
+BALANCE     NOT NULL NUMBER(12,2) 
+
+
+
+
+CREATE TABLE bank_accounts (
+    account_id  NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id NUMBER NOT NULL UNIQUE,
+    balance     NUMBER(12,2) DEFAULT 0 NOT NULL,
+
+    CONSTRAINT fk_bank_employee
+        FOREIGN KEY (employee_id)
+        REFERENCES employee(EMP_ID),
+
+    CONSTRAINT chk_balance
+        CHECK (balance >= 0)
+);
+
+
+
+CREATE OR REPLACE PACKAGE bank_accounts_pkg AS
+
+    -- CREATE: Create a bank account
+    PROCEDURE create_account(
+        p_account_id  IN bank_accounts.account_id%TYPE,
+        p_employee_id IN bank_accounts.employee_id%TYPE,
+        p_balance     IN bank_accounts.balance%TYPE DEFAULT 0
+    );
+
+    -- READ: Get account by account ID
+    PROCEDURE get_account_by_id(
+        p_account_id  IN bank_accounts.account_id%TYPE,
+        p_employee_id OUT bank_accounts.employee_id%TYPE,
+        p_balance     OUT bank_accounts.balance%TYPE
+    );
+
+    -- READ: Get account by employee ID
+    PROCEDURE get_account_by_employee(
+        p_employee_id IN bank_accounts.employee_id%TYPE,
+        p_account_id  OUT bank_accounts.account_id%TYPE,
+        p_balance     OUT bank_accounts.balance%TYPE
+    );
+
+    -- UPDATE: Update account balance
+    PROCEDURE update_balance(
+        p_account_id IN bank_accounts.account_id%TYPE,
+        p_balance    IN bank_accounts.balance%TYPE
+    );
+
+    -- DELETE: Delete a bank account
+    PROCEDURE delete_account(
+        p_account_id IN bank_accounts.account_id%TYPE
+    );
+
+END bank_accounts_pkg;
+/
